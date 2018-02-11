@@ -34,20 +34,21 @@ public class VerificationMenu : MonoBehaviour {
 		this.decided = true;
 	}
 
-	public void setItems(int[] order){
+	public void setItems(int[] order, int[] choices){
 		decided = false;
 		accept = false;
 		string[] orderNames = Menu.getOrderItemNames(order);
-		string[] ingredientNames = Recipes.getIngredientNames(order);
+		string[] ingredientNames = Recipes.getAllIngredientNames();
+		Debug.Log("Ingredient Names: " + Functions.print(ingredientNames));
 
 		orderItems = Functions.map((x => (Instantiate(orderItemPrefab, Vector3.zero, Quaternion.identity, orderPanel.transform))), orderNames);
 		for(int i = 0; i < orderItems.Length; i++){
 			orderItems[i].transform.Find("Text").GetComponent<Text>().text = orderNames[i];
 		}
 
-		ingredientItems = Functions.map((x => (Instantiate(orderItemPrefab, Vector3.zero, Quaternion.identity, ingredientPanel.transform))), ingredientNames);
+		ingredientItems = Functions.map((x => (Instantiate(orderItemPrefab, Vector3.zero, Quaternion.identity, ingredientPanel.transform))), choices);
 		for(int i = 0; i < ingredientItems.Length; i++){
-			ingredientItems[i].transform.Find("Text").GetComponent<Text>().text = ingredientNames[i];
+			ingredientItems[i].transform.Find("Text").GetComponent<Text>().text = ingredientNames[choices[i]];
 		}
 	}
 }

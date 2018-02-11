@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class OrderMenu : MonoBehaviour {
 
 	public bool hasOrder = false;
+	public Kitchen kitchen;
 	[SerializeField] private GameObject orderPrefab;
 	[SerializeField] private GameObject orderItemPrefab;
 	[SerializeField] private GameObject idleEmployeePrefab;
@@ -14,8 +15,10 @@ public class OrderMenu : MonoBehaviour {
 	[SerializeField] private GameObject currentOrder;
 	[SerializeField] private GameObject[] orderItems;
 	[SerializeField] private GameObject[] employeeItems;
+	[SerializeField] private UIButton takeButton;
 	[SerializeField] private Employee[] employees;
 	[SerializeField] private int[] idleEmployees;
+	[SerializeField] private bool take;
 	private Order order;
 
 	private const int maxColumns = 4;
@@ -26,10 +29,16 @@ public class OrderMenu : MonoBehaviour {
 
 	public void checkClicked(){
 		if(hasOrder){
-			bool[] clicked = Functions.map((x => x.GetComponent<UIButton>().getClicked()), employeeItems);
+			take = takeButton.getClicked();
+			if(take){
+				if(kitchen.setChefOrder(order)) clearOrder();
+			}
+			else{
+				bool[] clicked = Functions.map((x => x.GetComponent<UIButton>().getClicked()), employeeItems);
 
-			if(Functions.any(clicked)){
-				delegateOrder(idleEmployees[Functions.find(clicked, true)]);
+				if(Functions.any(clicked)){
+					delegateOrder(idleEmployees[Functions.find(clicked, true)]);
+				}
 			}
 		}
 	}
@@ -45,6 +54,7 @@ public class OrderMenu : MonoBehaviour {
 		currentOrder = Instantiate(orderPrefab, Vector3.zero, Quaternion.identity, transform);
 		orderPanel = currentOrder.transform.Find("Order Items").Find("Order Panel").gameObject;
 		employeeGrid = currentOrder.transform.Find("Idle Employees").Find("Employees").Find("Employee Grid").gameObject;
+		takeButton = currentOrder.transform.Find("Idle Employees").Find("Panel").Find("Take").gameObject.GetComponent<UIButton>();
 
 		orderItems = new GameObject[orderStrings.Length];
 		for(int i = 0; i < orderStrings.Length; i++){
@@ -74,6 +84,10 @@ public class OrderMenu : MonoBehaviour {
 
 	public void delegateOrder(int employee){
 		employees[employee].giveOrder(order);
+		clearOrder();
+	}
+
+	private void clearOrder(){
 		hasOrder = false;
 		Destroy(currentOrder);
 	}

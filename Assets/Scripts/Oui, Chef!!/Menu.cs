@@ -13,6 +13,13 @@ public class Menu  {
 		Count
 	};
 
+	public static Dictionary<int,int> prices = new Dictionary<int, int>(){ 
+		{(int) items.Gnocchi, 15 },
+		{(int) items.Pizza, 20 },
+		{(int) items.Frittata, 15 },
+		{(int) items.Spaghetti, 10 }
+	};
+
 	public static int[] menu;
 
 	public static void setMenu(int[] newMenu){
@@ -32,5 +39,9 @@ public class Menu  {
 
 	public static string[] getOrderItemNames(int[] order){
 		return Functions.map((x => Enum.GetName(typeof(items), x)), order);
+	}
+
+	public static string getOrderItemName(int item){
+		return Enum.GetName(typeof(items), item);
 	}
 }

@@ -6,18 +6,27 @@ public class Employee : MonoBehaviour {
 
 	public bool idle;
 	public string employeeName = "Anon";
+	[SerializeField] private AudioSource select;
+	[SerializeField] private AudioSource deselect;
+	[SerializeField] private AudioSource matt;
+	[SerializeField] private GameObject shout;
 	[SerializeField] private GameObject verificationMenuPrefab;
 	[SerializeField] private GameObject verificationMenu;
 	[SerializeField] private Kitchen kitchen;
 	[SerializeField] private float pathBuffer;
 	[SerializeField] private float speed;
+	[SerializeField] private float shoutTime;
+	[SerializeField] private Station targetStation;
 	private SimpleNeuralNetwork network;
 	private Stack<int> destinations;
 	private Stack<Node> path;
 	private Order order;
-	private int[] choices;
+	[SerializeField] private int[] choices;
 	[SerializeField] private float[] orderVector;
 	[SerializeField] private float[] recipeVector;
+	[SerializeField] private float shoutTimer;
+	[SerializeField] private float waitTimer;
+	[SerializeField] private bool waiting;
 	private const float vectorMin = -1.0f;
 
 	void Start () {
@@ -28,26 +37,58 @@ public class Employee : MonoBehaviour {
 		this.network = new SimpleNeuralNetwork((int) Menu.items.Count, (int) Recipes.ingredients.Count);
 		this.path = new Stack<Node>();
 		this.destinations = new Stack<int>();
+		this.waitTimer = 0.0f;
+		this.waiting = false;
+		if(employeeName == "Matt") matt.Play();
 	}
 	
 	void Update () {
-		if(verificationMenu != null){
-			if(verificationMenu.GetComponent<VerificationMenu>().decided){
-				if(verificationMenu.GetComponent<VerificationMenu>().accept){
-					Destroy(verificationMenu);
-					verificationMenu = null;
-					sendOutOrder();
-				}
-				else{
-					Destroy(verificationMenu);
-					remakeOrder();
+		if(!waiting  && !kitchen.pause){
+			updateShout();
+
+			if(verificationMenu != null){
+				if(verificationMenu.GetComponent<VerificationMenu>().decided){
+					if(verificationMenu.GetComponent<VerificationMenu>().accept){
+						select.Play();
+						Destroy(verificationMenu);
+						verificationMenu = null;
+						sendOutOrder();
+					}
+					else{
+						deselect.Play();
+						shout.SetActive(true);
+						shoutTimer = shoutTime;
+						Destroy(verificationMenu);
+						verificationMenu = null;
+						remakeOrder();
+					}
 				}
 			}
+			else{
+				if(destinations.Count == 0 && path.Count == 0 && !idle && verificationMenu == null){
+					presentDish();
+				}
+			}
+
+			move();
+		}
+		else{
+			if(!kitchen.pause) updateWaiting();
 		}
 	}
 
 	void FixedUpdate(){
-		move();
+	}
+
+	private void updateWaiting(){
+		if(waiting){
+			if(waitTimer <= 0.0f){
+				waitTimer = 0.0f;
+				waiting = false;
+				//setNextDestination();
+			}
+			else waitTimer -= Time.deltaTime;
+		}
 	}
 
 	public void setKitchen(Kitchen kitchen){
@@ -59,20 +100,23 @@ public class Employee : MonoBehaviour {
 	}
 
 	public void setNextDestination(){
+		Debug.Log("Setting destination");
 		if(destinations.Count > 0){
 			int destination = destinations.Pop();
 
 			//Debug.Log("Destination: " + destination.ToString());
 			changePath(kitchen.getPath(transform.position, destination));
+			targetStation = kitchen.getStation(destination);
 		}
-		else{
-			if(!idle && verificationMenu == null){
-				presentDish();
-			}
-		}
+		// else{
+		// 	if(!idle && verificationMenu == null){
+		// 		presentDish();
+		// 	}
+		// }
 	}
 
 	public void changePath(Node[] path){
+		Debug.Log(Functions.print(Functions.map((x => x.position), path)));
 		this.path.Clear();
 		for(int i = path.Length - 1; i >= 0; i--){
 			this.path.Push(path[i]);
@@ -102,11 +146,17 @@ public class Employee : MonoBehaviour {
 		this.choices = Functions.getNGreatestIndices(network.getOutputs(), recipe.Length);
 
 		int[] destinations = kitchen.getPreparationLocations(choices);
+		Debug.Log(Functions.print(destinations));
 		foreach(int destination in destinations){
 			this.destinations.Push(destination);
 		}
 
 		setNextDestination();
+	}
+
+	public void wait(float time){
+		waiting = true;
+		waitTimer = time;
 	}
 
 	private void move(){
@@ -116,18 +166,41 @@ public class Employee : MonoBehaviour {
 			float magnitude = Mathf.Abs((difference).magnitude);
 			if(magnitude < pathBuffer){
 				path.Pop();
+				if(path.Count == 0){
+					if(targetStation != null){
+						Debug.Log("Interacting");
+						wait(targetStation.employeeInteract());
+						targetStation = null;
+						setNextDestination();
+					}
+				}
 			}
 
 			transform.Translate(speed * Time.deltaTime * difference.normalized);
 		}
 		else{
-			setNextDestination();
+			// if(destinations.Count > 0){
+			// 	setNextDestination();
+			// }
+		}
+	}
+
+	private void updateShout(){
+		if(shoutTimer > 0.0f){
+			shoutTimer -= Time.deltaTime;
+			if(shoutTimer <= 0) {
+				shout.SetActive(false);
+				shoutTimer = 0.0f;
+			}
+		}
+		else{
+			shoutTimer = 0.0f;
 		}
 	}
 
 	private void presentDish(){
 		verificationMenu = Instantiate(verificationMenuPrefab, Vector3.zero, Quaternion.identity, transform);
-		verificationMenu.GetComponent<VerificationMenu>().setItems(order.order);
+		verificationMenu.GetComponent<VerificationMenu>().setItems(order.order, choices);
 	}
 
 	private void sendOutOrder(){

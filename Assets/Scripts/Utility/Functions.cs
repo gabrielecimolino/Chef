@@ -5,6 +5,10 @@ using MathNet.Numerics.LinearAlgebra;
 
 public class Functions {
 
+	public static T identity<T>(T x){
+		return x;
+	}
+	
 	public static T[] initArray<T>(int length, T value){
 		T[] array = new T[length];
 
@@ -369,6 +373,10 @@ public class Functions {
 		return returnArray;
 	}
 
+	public static T[] replace<T>(T[] array, T target, T replacement) where T : System.IEquatable<T>{
+		return map((x => x.Equals(target) ? replacement : x), array);
+	}
+
 	public static int[] occurences<T>(T[] array, T item) where T : System.IEquatable<T> {
 		int[] indices = new int[Functions.count(item, array)];
 		int count = 0;
@@ -443,6 +451,26 @@ public class Functions {
 		}
 
 		return -1;
+	}
+
+	public static int[] findAll<T>(T[] array, System.Predicate<T> f){
+		List<int> indices = new List<int>();
+
+		for(int i = 0; i < array.Length; i++){
+			if(f(array[i])){
+				indices.Add(i);
+			}
+		}
+
+		return indices.ToArray();
+	}
+
+	public static T get<T>(T[] array, System.Predicate<T> f, T nullItem){
+		foreach(T t in array){
+			if(f(t)) return t;
+		}
+
+		return nullItem;
 	}
 
 	public static TU foldl<T,TU>(System.Func<TU,T,TU> f, TU init, T[] array){

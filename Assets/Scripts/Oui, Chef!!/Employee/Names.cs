@@ -12,6 +12,11 @@ public class Names {
 		"Susan",
 		"Alice",
 		"Greg",
+		"Matt",
+		"Quentin",
+		"Sam",
+		"Ben",
+		"Gabriele"
 	};
 
 	public static string randomName(){

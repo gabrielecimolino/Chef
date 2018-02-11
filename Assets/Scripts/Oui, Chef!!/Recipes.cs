@@ -59,4 +59,17 @@ public class Recipes {
 
 		return ingredientNames;
 	}
+
+	public static string getIngredientName(int ingredient){
+		return Enum.GetName(typeof(ingredients), ingredient);
+	}
+
+	public static string[] getAllIngredientNames(){
+		return Enum.GetNames(typeof(ingredients));
+		// List<string> names = new List<string>();
+
+		// for(int i = 0; i < (int) ingredients.Count; i++){
+
+		// }
+	}
 }
